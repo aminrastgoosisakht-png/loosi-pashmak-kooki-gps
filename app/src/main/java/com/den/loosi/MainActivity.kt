@@ -174,10 +174,10 @@ class MainActivity : Activity(), LocationListener {
           <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
           <style>
             *{box-sizing:border-box}html,body,#map{height:100%;width:100%;margin:0;font-family:sans-serif}
-            .panel{position:absolute;z-index:1000;top:12px;right:12px;left:12px;background:#07532d;color:white;padding:13px 15px;border:1px solid #d7b64e;border-radius:17px;box-shadow:0 3px 14px #0004}
-            .title{font-size:17px;font-weight:bold;display:flex;align-items:center;gap:9px}.logo{width:42px;height:42px;border:2px solid #e4c35b;border-radius:50%;background:#073b24;display:grid;place-items:center;font-size:21px}
-            .status{display:block;margin-top:8px;color:#eff8ef;font-size:12px;line-height:1.7}.meta{display:block;color:#c6dfcd;font-size:10px;margin-top:3px}
-            .locate{position:absolute;z-index:1000;bottom:24px;right:16px;left:16px;border:0;border-radius:13px;background:#d8b45a;color:#183526;padding:14px;font-size:15px;font-weight:bold;box-shadow:0 2px 8px #3335}
+            .menu-button{position:absolute;z-index:1200;top:14px;right:14px;width:48px;height:48px;border:1px solid #d7b64e;border-radius:14px;background:#07532d;color:#fff;box-shadow:0 3px 12px #0005;font-size:27px;line-height:1;display:grid;place-items:center}
+            .menu-pop{display:none;position:absolute;z-index:1201;top:70px;right:14px;width:210px;padding:8px;background:#fff;border:1px solid #d7b64e;border-radius:14px;box-shadow:0 5px 20px #0005}
+            .menu-pop button{display:block;width:100%;padding:13px 10px;border:0;border-radius:9px;background:#07532d;color:#fff;font-size:14px;font-weight:bold;text-align:right}
+            .locate{position:absolute;z-index:1000;bottom:24px;right:16px;width:54px;height:54px;border:1px solid #d7b64e;border-radius:50%;background:#07532d;color:#fff;font-size:25px;box-shadow:0 2px 8px #3335}
             .bird-pin{display:flex;align-items:center;gap:5px;white-space:nowrap;transform:translateY(-4px)}
             .bird-dot{width:30px;height:30px;border:2px solid #e9c75c;border-radius:50%;background:#07532d;display:grid;place-items:center;font-size:17px;box-shadow:0 0 0 3px #fff9,0 2px 7px #0006;position:relative}
             .bird-dot:after{content:'';position:absolute;top:-3px;left:-3px;width:7px;height:7px;border-radius:50%;background:#ff3030;box-shadow:0 0 7px #f00;animation:blink 1s infinite}
@@ -194,12 +194,8 @@ class MainActivity : Activity(), LocationListener {
         </head>
         <body>
           <div id="map"></div>
-          <div class="panel">
-            <div class="title"><div class="logo">🐤🐦</div><span>لوسی، پشمک و کوکی</span></div>
-            <span class="status" id="status">در انتظار دریافت موقعیت گوشی…</span>
-            <span class="meta" id="meta">فعلاً موقعیت گوشی به‌عنوان موقعیت هر سه پرنده نمایش داده می‌شود؛ ردیاب سخت‌افزاری هنوز متصل نیست.</span>
-            <button class="manage" onclick="openManager()">⚙ مدیریت حساب و ردیاب‌ها</button>
-          </div>
+          <button class="menu-button" aria-label="فهرست خدمات" onclick="toggleMenu()">☰</button>
+          <div class="menu-pop" id="menuPop"><button onclick="openManager()">⚙ مدیریت حساب و ردیاب‌ها</button></div>
           <div class="shade" id="manager">
             <div class="sheet">
               <h3>حساب صاحب پرنده و ردیاب‌ها</h3>
@@ -214,7 +210,7 @@ class MainActivity : Activity(), LocationListener {
               <p style="font-size:10px;color:#666;line-height:1.7">اطلاعات این نسخه فقط روی همین گوشی ذخیره می‌شود. حساب آنلاین، همگام‌سازی بین گوشی‌ها و اتصال سخت‌افزار هنوز فعال نیست.</p>
             </div>
           </div>
-          <button class="locate" onclick="centerOnPhone()">◎ نمایش موقعیت فعلی</button>
+          <button class="locate" aria-label="موقعیت من" onclick="centerOnPhone()">◎</button>
           <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
           <script>
             const map=L.map('map',{zoomControl:false}).setView([32.5,53],5);
@@ -222,7 +218,8 @@ class MainActivity : Activity(), LocationListener {
             L.control.zoom({position:'bottomright'}).addTo(map);
             let birdMarkers=[],circle=null,lastPoint=null;
             const birds=[{name:'لوسی',emoji:'🐤',dx:-9},{name:'پشمک',emoji:'🐦',dx:0},{name:'کوکی',emoji:'🐤',dx:9}];
-            function setStatus(message){document.getElementById('status').textContent=message;}
+            function setStatus(message){/* وضعیت در نمای نقشه پنهان است */}
+            function toggleMenu(){const m=document.getElementById('menuPop');m.style.display=m.style.display==='block'?'none':'block';}
             function setPhoneLocation(lat,lon,accuracy,time){
               lastPoint=[lat,lon];
               birdMarkers.forEach(m=>map.removeLayer(m));birdMarkers=[];
@@ -236,7 +233,7 @@ class MainActivity : Activity(), LocationListener {
               circle=L.circle(lastPoint,{radius:accuracy,color:'#16854c',fillOpacity:.10,weight:2}).addTo(map);
               map.setView(lastPoint,16);
               setStatus('موقعیت گوشی دریافت شد و فعلاً برای هر سه پرنده ثبت می‌شود | دقت: '+Math.round(accuracy)+' متر');
-              document.getElementById('meta').textContent='آخرین به‌روزرسانی: '+time+' — موقعیت هر سه نشانگر یکسان و متعلق به گوشی است، نه ردیاب روی پرنده.';
+              /* نمای اصلی فقط نقشه و نشانگر پرنده‌هاست. */
             }
             function centerOnPhone(){
               if(lastPoint){map.setView(lastPoint,17);if(birdMarkers.length)birdMarkers[0].openPopup();}
@@ -244,6 +241,7 @@ class MainActivity : Activity(), LocationListener {
             }
             function getTrackers(){try{return JSON.parse(localStorage.getItem('birdTrackers')||'[]')}catch(e){return []}}
             function openManager(){
+              document.getElementById('menuPop').style.display='none';
               document.getElementById('manager').style.display='flex';
               document.getElementById('owner').value=localStorage.getItem('birdOwner')||'';
               document.getElementById('contact').value=localStorage.getItem('birdContact')||'';
