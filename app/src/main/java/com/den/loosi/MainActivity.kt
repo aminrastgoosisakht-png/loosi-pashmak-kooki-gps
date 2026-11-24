@@ -184,6 +184,12 @@ class MainActivity : Activity(), LocationListener {
             @keyframes blink{0%,45%{opacity:1}46%,100%{opacity:.12}}
             .bird-name{background:#07532d;color:#fff;border:1px solid #e3c15a;border-radius:8px;padding:4px 7px;font-size:11px;font-weight:bold;box-shadow:0 2px 5px #0004}
             .leaflet-control-attribution{font-size:8px}
+            .manage{margin-top:9px;background:#d8b45a;color:#183526;border:0;border-radius:9px;padding:8px 12px;font-weight:bold;font-size:12px}
+            .shade{display:none;position:absolute;inset:0;z-index:3000;background:#0009;align-items:center;justify-content:center;padding:18px}
+            .sheet{width:100%;max-width:420px;max-height:88%;overflow:auto;background:#fff;color:#183526;border-radius:18px;padding:17px;box-shadow:0 8px 30px #0007}
+            .sheet h3{margin:0 0 12px;color:#07532d}.sheet input{width:100%;padding:11px;margin:5px 0 9px;border:1px solid #b8c8bd;border-radius:9px;font-size:14px}
+            .sheet label{font-size:12px;font-weight:bold}.actions{display:flex;gap:8px}.actions button{flex:1;padding:11px;border:0;border-radius:9px;background:#07532d;color:white;font-weight:bold}.actions .cancel{background:#777}
+            .tracker-row{border:1px solid #d5e1d8;border-radius:10px;padding:9px;margin:7px 0;font-size:12px}
           </style>
         </head>
         <body>
@@ -192,6 +198,21 @@ class MainActivity : Activity(), LocationListener {
             <div class="title"><div class="logo">🐤🐦</div><span>لوسی، پشمک و کوکی</span></div>
             <span class="status" id="status">در انتظار دریافت موقعیت گوشی…</span>
             <span class="meta" id="meta">فعلاً موقعیت گوشی به‌عنوان موقعیت هر سه پرنده نمایش داده می‌شود؛ ردیاب سخت‌افزاری هنوز متصل نیست.</span>
+            <button class="manage" onclick="openManager()">⚙ مدیریت حساب و ردیاب‌ها</button>
+          </div>
+          <div class="shade" id="manager">
+            <div class="sheet">
+              <h3>حساب صاحب پرنده و ردیاب‌ها</h3>
+              <label>نام صاحب حساب</label><input id="owner" placeholder="نام صاحب پرنده">
+              <label>ایمیل یا شناسه تماس (اختیاری در نسخه آزمایشی)</label><input id="contact" placeholder="ایمیل یا شماره تماس">
+              <hr>
+              <label>نام پرنده</label><input id="birdName" placeholder="مثلاً لوسی">
+              <label>کد اختصاصی ردیاب</label><input id="trackerCode" placeholder="مثلاً LV-1001">
+              <label>PIN اتصال ردیاب (در این نسخه فقط محلی ذخیره می‌شود)</label><input id="trackerPin" type="password" placeholder="PIN دستگاه">
+              <div class="actions"><button onclick="saveTracker()">ثبت ردیاب</button><button class="cancel" onclick="closeManager()">بستن</button></div>
+              <h3 style="margin-top:16px">ردیاب‌های ثبت‌شده</h3><div id="trackerList"></div>
+              <p style="font-size:10px;color:#666;line-height:1.7">اطلاعات این نسخه فقط روی همین گوشی ذخیره می‌شود. حساب آنلاین، همگام‌سازی بین گوشی‌ها و اتصال سخت‌افزار هنوز فعال نیست.</p>
+            </div>
           </div>
           <button class="locate" onclick="centerOnPhone()">◎ نمایش موقعیت فعلی</button>
           <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -221,6 +242,30 @@ class MainActivity : Activity(), LocationListener {
               if(lastPoint){map.setView(lastPoint,17);if(birdMarkers.length)birdMarkers[0].openPopup();}
               else setStatus('هنوز موقعیتی دریافت نشده؛ GPS گوشی را روشن کنید.');
             }
+            function getTrackers(){try{return JSON.parse(localStorage.getItem('birdTrackers')||'[]')}catch(e){return []}}
+            function openManager(){
+              document.getElementById('manager').style.display='flex';
+              document.getElementById('owner').value=localStorage.getItem('birdOwner')||'';
+              document.getElementById('contact').value=localStorage.getItem('birdContact')||'';
+              renderTrackers();
+            }
+            function closeManager(){document.getElementById('manager').style.display='none'}
+            function renderTrackers(){
+              const list=getTrackers();const box=document.getElementById('trackerList');
+              box.innerHTML=list.length?list.map((t,i)=>'<div class="tracker-row"><b>'+escapeHtml(t.name)+'</b> — '+escapeHtml(t.code)+'<br>وضعیت: ثبت‌شده روی این گوشی <button onclick="removeTracker('+i+')" style="float:left">حذف</button></div>').join(''):'<small>هنوز ردیابی ثبت نشده است.</small>';
+            }
+            function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+            function saveTracker(){
+              const owner=document.getElementById('owner').value.trim(),contact=document.getElementById('contact').value.trim();
+              const name=document.getElementById('birdName').value.trim(),code=document.getElementById('trackerCode').value.trim(),pin=document.getElementById('trackerPin').value.trim();
+              if(!owner||!name||!code||!pin){alert('نام صاحب حساب، نام پرنده، کد ردیاب و PIN را وارد کنید.');return;}
+              const list=getTrackers();if(list.some(t=>t.code.toLowerCase()===code.toLowerCase())){alert('این کد ردیاب قبلاً ثبت شده است.');return;}
+              localStorage.setItem('birdOwner',owner);localStorage.setItem('birdContact',contact);
+              list.push({name,code,pin});localStorage.setItem('birdTrackers',JSON.stringify(list));
+              document.getElementById('birdName').value='';document.getElementById('trackerCode').value='';document.getElementById('trackerPin').value='';
+              renderTrackers();alert('ردیاب در این گوشی ثبت شد. اتصال واقعی پس از آماده‌شدن سخت‌افزار و سرور فعال می‌شود.');
+            }
+            function removeTracker(i){const list=getTrackers();list.splice(i,1);localStorage.setItem('birdTrackers',JSON.stringify(list));renderTrackers();}
           </script>
         </body>
         </html>
