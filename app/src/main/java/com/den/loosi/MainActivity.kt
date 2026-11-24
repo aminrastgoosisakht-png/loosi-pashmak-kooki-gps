@@ -170,45 +170,55 @@ class MainActivity : Activity(), LocationListener {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-          <title>loosi&amp;pashmak&amp;kooki</title>
+          <title>لوسی، پشمک و کوکی</title>
           <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
           <style>
-            html,body,#map{height:100%;width:100%;margin:0;font-family:sans-serif}
-            .panel{position:absolute;z-index:1000;top:12px;right:12px;left:12px;background:#123b2b;color:white;padding:14px;border-radius:16px;box-shadow:0 2px 12px #3336}
-            .title{font-size:16px;font-weight:bold}.status{display:block;margin-top:8px;color:#e1f0e5;font-size:13px;line-height:1.7}
-            .meta{display:block;color:#b8d5c2;font-size:11px;margin-top:3px}
-            .locate{position:absolute;z-index:1000;bottom:28px;right:16px;border:0;border-radius:13px;background:#d8b45a;color:#183526;padding:13px 17px;font-size:14px;font-weight:bold;box-shadow:0 2px 8px #3335}
-            .leaflet-control-attribution{font-size:9px}
+            *{box-sizing:border-box}html,body,#map{height:100%;width:100%;margin:0;font-family:sans-serif}
+            .panel{position:absolute;z-index:1000;top:12px;right:12px;left:12px;background:#07532d;color:white;padding:13px 15px;border:1px solid #d7b64e;border-radius:17px;box-shadow:0 3px 14px #0004}
+            .title{font-size:17px;font-weight:bold;display:flex;align-items:center;gap:9px}.logo{width:42px;height:42px;border:2px solid #e4c35b;border-radius:50%;background:#073b24;display:grid;place-items:center;font-size:21px}
+            .status{display:block;margin-top:8px;color:#eff8ef;font-size:12px;line-height:1.7}.meta{display:block;color:#c6dfcd;font-size:10px;margin-top:3px}
+            .locate{position:absolute;z-index:1000;bottom:24px;right:16px;left:16px;border:0;border-radius:13px;background:#d8b45a;color:#183526;padding:14px;font-size:15px;font-weight:bold;box-shadow:0 2px 8px #3335}
+            .bird-pin{display:flex;align-items:center;gap:5px;white-space:nowrap;transform:translateY(-4px)}
+            .bird-dot{width:30px;height:30px;border:2px solid #e9c75c;border-radius:50%;background:#07532d;display:grid;place-items:center;font-size:17px;box-shadow:0 0 0 3px #fff9,0 2px 7px #0006;position:relative}
+            .bird-dot:after{content:'';position:absolute;top:-3px;left:-3px;width:7px;height:7px;border-radius:50%;background:#ff3030;box-shadow:0 0 7px #f00;animation:blink 1s infinite}
+            @keyframes blink{0%,45%{opacity:1}46%,100%{opacity:.12}}
+            .bird-name{background:#07532d;color:#fff;border:1px solid #e3c15a;border-radius:8px;padding:4px 7px;font-size:11px;font-weight:bold;box-shadow:0 2px 5px #0004}
+            .leaflet-control-attribution{font-size:8px}
           </style>
         </head>
         <body>
           <div id="map"></div>
           <div class="panel">
-            <div class="title">🐤 loosi&amp;pashmak&amp;kooki</div>
+            <div class="title"><div class="logo">🐤🐦</div><span>لوسی، پشمک و کوکی</span></div>
             <span class="status" id="status">در انتظار دریافت موقعیت گوشی…</span>
-            <span class="meta" id="meta">این نسخه موقعیت گوشی را نشان می‌دهد، نه موقعیت پرنده را.</span>
+            <span class="meta" id="meta">فعلاً موقعیت گوشی به‌عنوان موقعیت هر سه پرنده نمایش داده می‌شود؛ ردیاب سخت‌افزاری هنوز متصل نیست.</span>
           </div>
-          <button class="locate" onclick="centerOnPhone()">موقعیت من</button>
+          <button class="locate" onclick="centerOnPhone()">◎ نمایش موقعیت فعلی</button>
           <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
           <script>
-            const map=L.map('map').setView([32.5,53],5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-              maxZoom:19,attribution:'© OpenStreetMap'
-            }).addTo(map);
-            let marker=null,circle=null,lastPoint=null;
+            const map=L.map('map',{zoomControl:false}).setView([32.5,53],5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+            L.control.zoom({position:'bottomright'}).addTo(map);
+            let birdMarkers=[],circle=null,lastPoint=null;
+            const birds=[{name:'لوسی',emoji:'🐤',dx:-9},{name:'پشمک',emoji:'🐦',dx:0},{name:'کوکی',emoji:'🐤',dx:9}];
             function setStatus(message){document.getElementById('status').textContent=message;}
             function setPhoneLocation(lat,lon,accuracy,time){
               lastPoint=[lat,lon];
-              if(marker)map.removeLayer(marker);
+              birdMarkers.forEach(m=>map.removeLayer(m));birdMarkers=[];
               if(circle)map.removeLayer(circle);
-              marker=L.marker(lastPoint).addTo(map).bindPopup('موقعیت فعلی گوشی');
-              circle=L.circle(lastPoint,{radius:accuracy,color:'#1d8a55',fillOpacity:.12}).addTo(map);
+              birds.forEach(b=>{
+                const lngOffset=b.dx*0.00001/Math.max(.2,Math.cos(lat*Math.PI/180));
+                const icon=L.divIcon({className:'',html:'<div class="bird-pin"><span class="bird-dot">'+b.emoji+'</span><span class="bird-name">'+b.name+'</span></div>',iconSize:[100,38],iconAnchor:[50,19]});
+                const m=L.marker([lat,lon+lngOffset],{icon}).addTo(map).bindPopup(b.name+' — موقعیت فعلی گوشی');
+                birdMarkers.push(m);
+              });
+              circle=L.circle(lastPoint,{radius:accuracy,color:'#16854c',fillOpacity:.10,weight:2}).addTo(map);
               map.setView(lastPoint,16);
-              setStatus('موقعیت دریافت شد | دقت تقریبی: '+Math.round(accuracy)+' متر');
-              document.getElementById('meta').textContent='آخرین به‌روزرسانی: '+time+' — این نسخه هنوز ردیاب پرنده نیست.';
+              setStatus('موقعیت گوشی دریافت شد و فعلاً برای هر سه پرنده ثبت می‌شود | دقت: '+Math.round(accuracy)+' متر');
+              document.getElementById('meta').textContent='آخرین به‌روزرسانی: '+time+' — موقعیت هر سه نشانگر یکسان و متعلق به گوشی است، نه ردیاب روی پرنده.';
             }
             function centerOnPhone(){
-              if(lastPoint){map.setView(lastPoint,17);if(marker)marker.openPopup();}
+              if(lastPoint){map.setView(lastPoint,17);if(birdMarkers.length)birdMarkers[0].openPopup();}
               else setStatus('هنوز موقعیتی دریافت نشده؛ GPS گوشی را روشن کنید.');
             }
           </script>
